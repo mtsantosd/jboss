@@ -1,25 +1,39 @@
-#Deployment
-#
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: httpd-on-k8s
-  name: httpd-server
-  labels:
-    app: httpd-server
+  name: web-server
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: httpd-server
-  strategy: {}
+      app: web-test
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        app: httpd-server
+        app: web-test
     spec:
+      volumes:
+        - name: nfs-pvc-web-vol
+          persistentVolumeClaim:
+            claimName: nfs-pvc-web
       containers:
-      - name: httpd
-        image: httpd:2.4
-        resources: {}
+      - name: httpd-{{BUILD_NUMBER}}
+        image: httpd:2.4.48-alpine3.14
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: nfs-pvc-web-vol
+            mountPath: /usr/local/apache2/htdocs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-server-service-test
+spec:
+  selector:
+    app: web-test
+  ports:
+    - protocol: TCP
+      port: 82
+      targetPort: 80
+  type: LoadBalancer
